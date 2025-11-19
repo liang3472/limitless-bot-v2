@@ -70,7 +70,7 @@ async function onTick() {
     console.error(error);
   }
 
-  await sleep(5 * 1000);
+  await sleep(10 * 1000);
   await onTick();
 }
 
