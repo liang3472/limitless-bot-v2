@@ -77,6 +77,8 @@ async function onTick() {
 async function main() {
   print('login...');
   await limitless.login();
+  await limitless.init(BUY_AMOUNT_USDC * 1000000);
+
   setInterval(async () => {
     try {
       print('claim...');

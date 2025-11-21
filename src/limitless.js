@@ -3,7 +3,60 @@ const { ethers } = require('ethers');
 const { print } = require('./utils.js');
 
 const CONDITIONALTOKENS_ADDRESS = '0xC9c98965297Bc527861c898329Ee280632B76e18';
+const CTF_ADDRESS = '0xa4409d988ca2218d956beefd3874100f444f0dc3';
+const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 const CONFIRMATIONS = 2;
+
+const USDC_ABI = [
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "spender",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "value",
+        "type": "uint256"
+      }
+    ],
+    "name": "approve",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "spender",
+        "type": "address"
+      }
+    ],
+    "name": "allowance",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+];
 
 const CONDITIONALTOKENS_ABI = [
   {
@@ -31,14 +84,55 @@ const CONDITIONALTOKENS_ABI = [
     "payable": false,
     "stateMutability": "nonpayable",
     "type": "function"
-  }
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "operator",
+        "type": "address"
+      },
+      {
+        "name": "approved",
+        "type": "bool"
+      }
+    ],
+    "name": "setApprovalForAll",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address"
+      },
+      {
+        "name": "operator",
+        "type": "address"
+      }
+    ],
+    "name": "isApprovedForAll",
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
 ];
 
 const DOMAIN = {
   "name": "Limitless CTF Exchange",
   "version": "1",
   "chainId": 8453,
-  "verifyingContract": "0xa4409d988ca2218d956beefd3874100f444f0dc3"
+  "verifyingContract": CTF_ADDRESS
 }
 
 class LimitlessSDK {
@@ -67,6 +161,35 @@ class LimitlessSDK {
     return axios.get('https://api.limitless.exchange/portfolio/positions').then(res => res.data);
   }
 
+  async init(amount) {
+    print('check USDC...');
+    const USDC = new ethers.Contract(USDC_ADDRESS, USDC_ABI, this.wallet);
+    const allowanceAmount = await USDC.allowance(this.wallet.address, CTF_ADDRESS);
+    if (allowanceAmount < amount) {
+      print(`amount less then allowance`);
+      print(`approve USDC... `);
+      const tx = await conditional.approve(CTF_ADDRESS, amount);
+      print(`🧾 approve USDC tx: ${tx.hash}`);
+      const receipt = await tx.wait(CONFIRMATIONS);
+      print(`✅ approve USDC completed in block ${receipt.blockNumber}`);
+    } else {
+      print(`USDC already approved`);
+    }
+
+    print('check 1155 NFT...');
+    const conditional = new ethers.Contract(CONDITIONALTOKENS_ADDRESS, CONDITIONALTOKENS_ABI, this.wallet);
+    const isApproved = await conditional.isApprovedForAll(this.wallet.address, CTF_ADDRESS);
+    if (!isApproved) {
+      print(`setApprovalForAll... `);
+      const tx = await conditional.setApprovalForAll(CTF_ADDRESS, true);
+      print(`🧾 approve nft tx: ${tx.hash}`);
+      const receipt = await tx.wait(CONFIRMATIONS);
+      print(`✅ approve nft completed in block ${receipt.blockNumber}`);
+    } else {
+      print(`1155 NFT already approved`);
+    }
+  }
+
   async getPositionsBySlug(slug) {
     const positions = await this._getPositions();
     return (positions?.clob || [])?.find(e => e.market.slug === slug);
@@ -92,7 +215,7 @@ class LimitlessSDK {
     const positions = await this._getPositions();
     const claims = (positions?.clob || []).filter(e =>
       e.market.closed &&
-      (Number(e.positions.yes.unrealizedPnl) > 0 || Number(e.positions.no.unrealizedPnl) > 0));
+      (Number(e.positions.yes.unrealizedPnl) > 1000 || Number(e.positions.no.unrealizedPnl) > 1000));
     const conditional = new ethers.Contract(CONDITIONALTOKENS_ADDRESS, CONDITIONALTOKENS_ABI, this.wallet);
 
     if (claims.length === 0) {
@@ -103,7 +226,7 @@ class LimitlessSDK {
       const tx = await conditional.redeemPositions(collateralToken.address, '0x0000000000000000000000000000000000000000000000000000000000000000', conditionId, ['1', '2']);
       print(`🧾 claim tx: ${tx.hash}`);
       const receipt = await tx.wait(CONFIRMATIONS);
-      print(`✅ claim completed in block ${receipt.blockNumber}`)
+      print(`✅ claim completed in block ${receipt.blockNumber}`);
     }
   }
 
