@@ -60,6 +60,29 @@ const USDC_ABI = [
 
 const CONDITIONALTOKENS_ABI = [
   {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address"
+      },
+      {
+        "name": "id",
+        "type": "uint256"
+      }
+    ],
+    "name": "balanceOf",
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "constant": false,
     "inputs": [
       {
@@ -193,6 +216,11 @@ class LimitlessSDK {
   async getPositionsBySlug(slug) {
     const positions = await this._getPositions();
     return (positions?.clob || [])?.find(e => e.market.slug === slug);
+  }
+
+  async hasOrder(positionId) {
+    const conditional = new ethers.Contract(CONDITIONALTOKENS_ADDRESS, CONDITIONALTOKENS_ABI, this.wallet);
+    return await conditional.balanceOf(this.wallet.address, positionId) > 0n;
   }
 
   getMarketDetail(slug) {

@@ -24,6 +24,7 @@ async function onTick() {
       print(`竞猜未开始或开始时间未满${START_MINS}分钟`);
     } else {
       const currOrder = await limitless.getPositionsBySlug(slug);
+      const hasOrder = await limitless.hasOrder(yesPositionId) || await limitless.hasOrder(noPositionId);
       const { adjustedMidpoint } = await limitless.getOrderBook(slug);
       const options = {
         yes: { point: adjustedMidpoint, positionId: yesPositionId },
@@ -56,7 +57,7 @@ async function onTick() {
 
       const max = Object.values(options).reduce((a, b) => (a.point > b.point ? a : b));
       print(`yes: ${options.yes.point * 100}%, no: ${options.no.point * 100}%`);
-      if (max.point * 100 >= Number(TRIGGER_PCT) && !currOrder) {
+      if (!hasOrder && max.point * 100 >= Number(TRIGGER_PCT) && !currOrder) {
         print('🎫 开始投注...');
         await limitless.buy({
           tokenId: max.positionId,
