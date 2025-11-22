@@ -243,8 +243,7 @@ class LimitlessSDK {
     const positions = await this._getPositions();
     const claims = (positions?.clob || []).filter(e =>
       e.market.closed &&
-      !e.market.negRiskRequestId &&
-      (Number(e.positions.yes.unrealizedPnl) > 1000 || Number(e.positions.no.unrealizedPnl) > 1000));
+      !e.market.negRiskRequestId);
     const conditional = new ethers.Contract(CONDITIONALTOKENS_ADDRESS, CONDITIONALTOKENS_ABI, this.wallet);
 
     if (claims.length === 0) {
