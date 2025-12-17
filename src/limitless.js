@@ -3,7 +3,7 @@ const { ethers } = require('ethers');
 const { print } = require('./utils.js');
 
 const CONDITIONALTOKENS_ADDRESS = '0xC9c98965297Bc527861c898329Ee280632B76e18';
-const CTF_ADDRESS = '0xa4409d988ca2218d956beefd3874100f444f0dc3';
+const CTF_ADDRESS = '0xF1De958F8641448A5ba78c01f434085385Af096D';
 const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 const CONFIRMATIONS = 2;
 
